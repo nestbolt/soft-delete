@@ -6,5 +6,7 @@ export interface SoftDeleteModuleOptions {
 export interface SoftDeleteAsyncOptions {
   imports?: any[];
   inject?: any[];
-  useFactory: (...args: any[]) => Promise<SoftDeleteModuleOptions> | SoftDeleteModuleOptions;
+  useFactory: (
+    ...args: any[]
+  ) => Promise<SoftDeleteModuleOptions> | SoftDeleteModuleOptions;
 }

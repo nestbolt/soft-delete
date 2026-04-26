@@ -34,4 +34,7 @@ export type {
 export { SoftDeleteNotInitializedException } from "./exceptions";
 
 // Interfaces
-export type { SoftDeleteModuleOptions, SoftDeleteAsyncOptions } from "./interfaces";
+export type {
+  SoftDeleteModuleOptions,
+  SoftDeleteAsyncOptions,
+} from "./interfaces";

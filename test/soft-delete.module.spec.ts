@@ -14,7 +14,12 @@ class TestPost {
   @Column()
   title!: string;
 
-  @Column({ name: "deleted_at", type: "datetime", nullable: true, default: null })
+  @Column({
+    name: "deleted_at",
+    type: "datetime",
+    nullable: true,
+    default: null,
+  })
   deletedAt!: Date | null;
 }
 

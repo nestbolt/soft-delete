@@ -7,7 +7,7 @@ export interface SoftDeletableOptions {
 }
 
 export function SoftDeletable(options?: SoftDeletableOptions): ClassDecorator {
-  return (target: Function) => {
+  return (target) => {
     Reflect.defineMetadata(
       SOFT_DELETABLE_METADATA_KEY,
       {

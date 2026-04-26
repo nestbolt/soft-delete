@@ -6,9 +6,18 @@ import { INCLUDE_DELETED_METADATA_KEY } from "../soft-delete.constants";
  * soft-deleted entities (bypasses the soft-delete filter).
  */
 export function IncludeDeleted(): ClassDecorator & MethodDecorator {
-  return (target: any, propertyKey?: string | symbol, descriptor?: PropertyDescriptor) => {
+  return (
+    target: any,
+    propertyKey?: string | symbol,
+    descriptor?: PropertyDescriptor,
+  ) => {
     if (propertyKey) {
-      Reflect.defineMetadata(INCLUDE_DELETED_METADATA_KEY, true, target, propertyKey);
+      Reflect.defineMetadata(
+        INCLUDE_DELETED_METADATA_KEY,
+        true,
+        target,
+        propertyKey,
+      );
     } else {
       Reflect.defineMetadata(INCLUDE_DELETED_METADATA_KEY, true, target);
     }

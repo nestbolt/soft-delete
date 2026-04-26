@@ -16,7 +16,12 @@ class Post {
   @Column()
   title!: string;
 
-  @Column({ name: "deleted_at", type: "datetime", nullable: true, default: null })
+  @Column({
+    name: "deleted_at",
+    type: "datetime",
+    nullable: true,
+    default: null,
+  })
   deletedAt!: Date | null;
 }
 
@@ -29,8 +34,21 @@ class Article {
   @Column()
   title!: string;
 
-  @Column({ name: "removed_at", type: "datetime", nullable: true, default: null })
+  @Column({
+    name: "removed_at",
+    type: "datetime",
+    nullable: true,
+    default: null,
+  })
   removedAt!: Date | null;
+}
+
+// Registered with TypeORM but the configured deleted-at column doesn't exist on it.
+@SoftDeletable({ columnName: "nonexistent_col" })
+@Entity("orphans")
+class Orphan {
+  @PrimaryGeneratedColumn("uuid")
+  id!: string;
 }
 
 describe("SoftDeleteService", () => {
@@ -44,11 +62,14 @@ describe("SoftDeleteService", () => {
         TypeOrmModule.forRoot({
           type: "better-sqlite3",
           database: ":memory:",
-          entities: [Post, Article],
+          entities: [Post, Article, Orphan],
           synchronize: true,
         }),
       ],
-      providers: [{ provide: SOFT_DELETE_OPTIONS, useValue: {} }, SoftDeleteService],
+      providers: [
+        { provide: SOFT_DELETE_OPTIONS, useValue: {} },
+        SoftDeleteService,
+      ],
     }).compile();
 
     await module.init();
@@ -138,7 +159,7 @@ describe("SoftDeleteService", () => {
   describe("withTrashed()", () => {
     it("should return query builder that includes all entities", async () => {
       const repo = dataSource.getRepository(Post);
-      const post1 = await repo.save(repo.create({ title: "Active" }));
+      await repo.save(repo.create({ title: "Active" }));
       const post2 = await repo.save(repo.create({ title: "Deleted" }));
       await service.softDelete(Post, post2.id);
 
@@ -150,13 +171,24 @@ describe("SoftDeleteService", () => {
   describe("onlyTrashed()", () => {
     it("should return only soft-deleted entities", async () => {
       const repo = dataSource.getRepository(Post);
-      const post1 = await repo.save(repo.create({ title: "Active" }));
+      await repo.save(repo.create({ title: "Active" }));
       const post2 = await repo.save(repo.create({ title: "Deleted" }));
       await service.softDelete(Post, post2.id);
 
       const trashed = await service.onlyTrashed(Post).getMany();
       expect(trashed).toHaveLength(1);
       expect(trashed[0].title).toBe("Deleted");
+    });
+  });
+
+  describe("getPropertyName()", () => {
+    it("falls back to 'deletedAt' when entity is not registered with the DataSource", () => {
+      class Unregistered {}
+      expect(service.getPropertyName(Unregistered)).toBe("deletedAt");
+    });
+
+    it("falls back to 'deletedAt' when registered entity has no matching column", () => {
+      expect(service.getPropertyName(Orphan)).toBe("deletedAt");
     });
   });
 

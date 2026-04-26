@@ -18,6 +18,10 @@ export class SoftDeleteSubscriber implements EntitySubscriberInterface {
     dataSource.subscribers.push(this);
   }
 
+  // Best-effort interception only. TypeORM's subscriber model cannot truly
+  // cancel a remove, so the underlying DELETE may still run after this hook.
+  // For reliable soft-delete behavior, use service.softDelete() or
+  // mixin.softDelete() instead of repo.remove().
   async beforeRemove(event: RemoveEvent<any>): Promise<void> {
     if (!event.entity) return;
 
@@ -29,31 +33,28 @@ export class SoftDeleteSubscriber implements EntitySubscriberInterface {
 
     const propertyName = service.getPropertyName(event.entity.constructor);
 
-    // If already soft-deleted, this is likely a force delete — let it proceed
-    if (event.entity[propertyName] !== null && event.entity[propertyName] !== undefined) {
+    // Already soft-deleted — treat as a force delete and let it proceed.
+    if (
+      event.entity[propertyName] !== null &&
+      event.entity[propertyName] !== undefined
+    ) {
       return;
     }
 
-    // Set the deletedAt timestamp and save instead of removing
     event.entity[propertyName] = new Date();
 
     try {
       await event.manager.save(event.entity);
-
-      // Signal: remove the entity ID so TypeORM skips the actual DELETE.
-      // TypeORM checks for entity ID before running DELETE; clearing it prevents the deletion.
-      if (event.queryRunner) {
-        // We cannot truly cancel a remove in TypeORM's subscriber model.
-        // The recommended approach is to use service.softDelete() or mixin.softDelete()
-        // instead of repo.remove(). This subscriber provides best-effort interception.
-      }
     } catch {
-      // Soft-delete interception failed — do not propagate to avoid crashing the main operation
+      // Swallow so the original remove path is not crashed by interception.
     }
   }
 
   private getMetadata(entity: any): SoftDeletableMetadata | null {
     if (!entity || !entity.constructor) return null;
-    return Reflect.getMetadata(SOFT_DELETABLE_METADATA_KEY, entity.constructor) ?? null;
+    return (
+      Reflect.getMetadata(SOFT_DELETABLE_METADATA_KEY, entity.constructor) ??
+      null
+    );
   }
 }

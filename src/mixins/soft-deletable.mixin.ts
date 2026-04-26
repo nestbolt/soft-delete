@@ -22,12 +22,17 @@ function getService(): SoftDeleteService {
 }
 
 export function SoftDeletableMixin<TBase extends Constructor>(Base: TBase) {
-  class SoftDeletableEntityClass extends Base implements SoftDeletableMixinEntity {
+  class SoftDeletableEntityClass
+    extends Base
+    implements SoftDeletableMixinEntity
+  {
     async softDelete(): Promise<void> {
       const service = getService();
       const id = (this as any).id;
       await service.softDelete(this.constructor as any, String(id));
-      const propertyName = service.getPropertyName(this.constructor);
+      const propertyName = service.getPropertyName(
+        this.constructor as Constructor,
+      );
       (this as any)[propertyName] = new Date();
     }
 
@@ -35,7 +40,9 @@ export function SoftDeletableMixin<TBase extends Constructor>(Base: TBase) {
       const service = getService();
       const id = (this as any).id;
       await service.restore(this.constructor as any, String(id));
-      const propertyName = service.getPropertyName(this.constructor);
+      const propertyName = service.getPropertyName(
+        this.constructor as Constructor,
+      );
       (this as any)[propertyName] = null;
     }
 
@@ -56,7 +63,9 @@ export function SoftDeletableMixin<TBase extends Constructor>(Base: TBase) {
     getDeletedAt(): Date | null {
       const service = SoftDeleteService.getInstance();
       if (service) {
-        const propertyName = service.getPropertyName(this.constructor);
+        const propertyName = service.getPropertyName(
+          this.constructor as Constructor,
+        );
         const val = (this as any)[propertyName];
         if (val instanceof Date) return val;
         if (val === null || val === undefined) return null;
